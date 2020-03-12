@@ -33,12 +33,14 @@ void setup()
 void loop()
 {
     // Mantendo/criando a conexão
-    if (!WiFi.isConnected())
+    if (!WiFi.isConnected() && !config_mode)
     {
         // Caso a conexão caia, tente realizar novamente
         bool connection_success = wifi_connect("", "");
-        if (connection_success == false && config_mode == false) // Caso não consiga conectar, iniciar modo de configuração
+        if (connection_success == false) // Caso não consiga conectar, iniciar modo de configuração
         {
+            Serial.println("[SISTEMA]: Iniciando modo de configuração.");
+
             config_mode = true;
             wifi_setupap();
         }
@@ -57,6 +59,8 @@ bool wifi_connect(String ssid, String password)
 {
     Serial.print("[WIFI]: Conectando");
 
+    WiFi.hostname("WifiRelay");
+    
     if (ssid == "")
         WiFi.begin(); // Utiliza últimas credenciais
     else
@@ -88,7 +92,7 @@ bool wifi_connect(String ssid, String password)
 
     Serial.println("[WIFI]: Falha ao conectar.");
 
-    return true;
+    return false;
 }
 
 void wifi_setupap()
@@ -158,8 +162,8 @@ void server_handle_config()
 
         server_print_connectedpage();
         bool connection_success = wifi_connect(ssid, password);
-        if (connection_success == false)
-            WiFi.softAPdisconnect(); // Desligando AP?
+        if (connection_success == true)
+            WiFi.softAPdisconnect();
     }
 }
 
@@ -202,9 +206,9 @@ void server_print_controlpage()
     page += "        <h1>WifiRelay</h1>";
     
     if (relay_on)
-        page += "       <p><a href=\"/\"><button class=\"button button2\">Desligar</button></a></p>";
+        page += "       <p><form action=\"\" method=\"POST\"><input type=\"submit\" class=\"button button2\" value=\"Desligar\"></form></p>";
     else
-        page += "       <p><a href=\"/\"><button class=\"button\">Ligar</button></a></p>";
+        page += "       <p><form action=\"\" method=\"POST\"><input type=\"submit\" class=\"button\" value=\"Ligar\"></form></p>";
 
     page += "    </body>";
     page += "</html>";
@@ -247,6 +251,7 @@ void server_print_connectedpage()
     page += "<html>";
     page += "    <head>";
     page += "        <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">";
+    page += "        <meta charset=\"utf-8\">";
     page += "        <title>WifiRelay - Config</title>";
     page += "    </head>";
     page += "    <body>";
